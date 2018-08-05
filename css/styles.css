@@ -26,11 +26,12 @@ body {
     width: 150px;
 }
 
-#weatherChart {
+
+/*#weatherChart {
     border: 1px solid black;
     height: 500px;
     overflow: auto;
-}
+}*/
 
 #errors {
     color: #FF0000;

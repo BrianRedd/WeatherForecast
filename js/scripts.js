@@ -15,6 +15,12 @@ $(document).ready(function() {
     var zipcode;
     var city;
     var units = "imperial";
+    var svgWidth = $(".container").width(),
+        svgHeight = 150;
+
+    var margin = { top: 10, right: 20, bottom: 30, left: 50 };
+    var width = svgWidth - margin.left - margin.right;
+    var height = svgHeight - margin.top - margin.bottom;
 
     /* Constants */
     const apiKEY = "eb02d0472566fca615fc7006e81869d3";
@@ -81,7 +87,7 @@ $(document).ready(function() {
         if (!data) {
             loadWeatherJSON(zip, city);
         } else {
-            displayData(data);
+            parseData(data);
         }
     }
 
@@ -109,7 +115,8 @@ $(document).ready(function() {
                     }
                     // write response data to sessionStorage under city name key
                     sessionStorage.setItem(data.city.name, JSON.stringify(data));
-                    displayData(data);
+                    console.log(response.list.length);
+                    parseData(data);
                 })
                 .fail((error) => {
                     console.log(error);
@@ -124,13 +131,14 @@ $(document).ready(function() {
     }
 
     // display data in DOM
-    function displayData(d) {
+    function parseData(d) {
         if (!d) return;
-        $cityName.html("for <span>" + d.city.name + "</span>");
-        //$chart.html("<span>" + JSON.stringify(d.list) + "</span>");
-        // unpack data
         let data = d.list;
-        let content = "<ul>";
+        let temp_Data = [];
+        let humidity_Data = [];
+        let cloud_Data = [];
+        let precipitation_Data = [];
+        //let content = "<ul>";
         data.forEach((forecast, idx) => {
             let precipitation = 0;
             if (forecast.rain['3h']) {
@@ -139,22 +147,196 @@ $(document).ready(function() {
             if (forecast.snow) {
                 precipitation += forecast.rain['3h'];
             };
-            let winddir = Math.floor((forecast.wind.deg + 11.25) / 22.5);
-            let date = new Date(forecast.dt * 1000);
+            //let winddir = Math.floor((forecast.wind.deg + 11.25) / 22.5);
+            /*let date = new Date(forecast.dt * 1000);
             let hour = date.getHours() % 12;
             if (hour === 0) hour = 12;
-            let dateTimeString = date.getDate() + " " + months[date.getMonth()] + " " + date.getFullYear() + ", " + hour + ":00 " + ((date.getHours() < 12) ? " AM" : " PM");
-            content += "<li><b>Date/Time: " + dateTimeString + "</b><ul>";
+            let dateTimeString = date.getDate() + " " + months[date.getMonth()] + " " + date.getFullYear() + ", " + hour + ":00 " + ((date.getHours() < 12) ? " AM" : " PM");*/
+            /*content += "<li><b>Date/Time: " + dateTimeString + "</b><ul>";
             content += "<li>Weather: " + forecast.weather[0].main + " (" + forecast.weather[0].description + ")</li>";
             content += "<li>Temperature: " + forecast.main.temp + " degrees</li>";
             content += "<li>Humidity: " + forecast.main.humidity + "</li>";
             content += "<li>Cloud cover: " + forecast.clouds.all + "%</li>";
-            content += "<li>Humidity: " + forecast.main.humidity + "</li>";
             content += "<li>Wind: " + Math.round(forecast.wind.speed * 100) / 100 + " MPH from " + Math.round(forecast.wind.deg * 100) / 100 + " degrees [" + windDirection[winddir] + "]</li>";
             content += "<li>Precipitation : " + Math.round(precipitation * 100) / 100 + " inches over last three hours</li>";
-            content += "</ul></li>";
+            content += "</ul></li>";*/
+            temp_Data.push({
+                date: new Date(forecast.dt * 1000),
+                temp: +forecast.main.temp
+            });
+            humidity_Data.push({
+                date: new Date(forecast.dt * 1000),
+                humidity: +forecast.main.humidity
+            });
+            cloud_Data.push({
+                date: new Date(forecast.dt * 1000),
+                clouds: +forecast.clouds.all
+            });
+            precipitation_Data.push({
+                date: new Date(forecast.dt * 1000),
+                precip: precipitation
+            });
         });
-        $chart.html(content);
+        drawTemperatureChart(temp_Data);
+        drawHumidityChart(humidity_Data);
+        drawCloudCoverChart(cloud_Data);
+        drawPrecipitationChart(precipitation_Data);
+    };
+
+    function drawTemperatureChart(data) {
+        let svg = d3.select('svg.temp')
+            .attr("width", svgWidth)
+            .attr("height", svgHeight);
+        let g = svg.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        let x = d3.scaleTime()
+            .rangeRound([0, width]);
+        let y = d3.scaleLinear()
+            .rangeRound([height, 0]);
+        let line = d3.line()
+            .x((d) => { return x(d.date) })
+            .y((d) => { return y(d.temp) });
+        x.domain(d3.extent(data, (d) => { return d.date }));
+        y.domain(d3.extent(data, (d) => { return d.temp }));
+        g.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x))
+            .select(".domain")
+            .remove();
+        g.append("g")
+            .call(d3.axisLeft(y))
+            .append("text")
+            .attr("fill", "#000")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", "0.71em")
+            .attr("text-anchor", "end")
+            .text("Temperature");
+        g.append("path")
+            .datum(data)
+            .attr("fill", "none")
+            .attr("stroke", "#006A5C")
+            .attr("stroke-linejoin", "round")
+            .attr("stroke-linecap", "round")
+            .attr("stroke-width", 3)
+            .attr("d", line);
+    };
+
+    function drawHumidityChart(data) {
+        let svg = d3.select('svg.humidity')
+            .attr("width", svgWidth)
+            .attr("height", svgHeight);
+        let g = svg.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        let x = d3.scaleTime()
+            .rangeRound([0, width]);
+        let y = d3.scaleLinear()
+            .rangeRound([height, 0]);
+        let line = d3.line()
+            .x((d) => { return x(d.date) })
+            .y((d) => { return y(d.humidity) });
+        x.domain(d3.extent(data, (d) => { return d.date }));
+        y.domain(d3.extent(data, (d) => { return d.humidity }));
+        g.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x))
+            .select(".domain")
+            .remove();
+        g.append("g")
+            .call(d3.axisLeft(y))
+            .append("text")
+            .attr("fill", "#000")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", "0.71em")
+            .attr("text-anchor", "end")
+            .text("% Humidity");
+        g.append("path")
+            .datum(data)
+            .attr("fill", "none")
+            .attr("stroke", "#7C0044")
+            .attr("stroke-linejoin", "round")
+            .attr("stroke-linecap", "round")
+            .attr("stroke-width", 3)
+            .attr("d", line);
+    };
+
+    function drawCloudCoverChart(data) {
+        let svg = d3.select('svg.cloud')
+            .attr("width", svgWidth)
+            .attr("height", svgHeight);
+        let g = svg.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        let x = d3.scaleTime()
+            .rangeRound([0, width]);
+        let y = d3.scaleLinear()
+            .rangeRound([height, 0]);
+        let line = d3.line()
+            .x((d) => { return x(d.date) })
+            .y((d) => { return y(d.clouds) });
+        x.domain(d3.extent(data, (d) => { return d.date }));
+        y.domain(d3.extent(data, (d) => { return d.clouds }));
+        g.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x))
+            .select(".domain")
+            .remove();
+        g.append("g")
+            .call(d3.axisLeft(y))
+            .append("text")
+            .attr("fill", "#000")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", "0.71em")
+            .attr("text-anchor", "end")
+            .text("% Cloud Cover");
+        g.append("path")
+            .datum(data)
+            .attr("fill", "none")
+            .attr("stroke", "#F3AA85")
+            .attr("stroke-linejoin", "round")
+            .attr("stroke-linecap", "round")
+            .attr("stroke-width", 3)
+            .attr("d", line);
+    };
+
+    function drawPrecipitationChart(data) {
+        let svg = d3.select('svg.precipitation')
+            .attr("width", svgWidth)
+            .attr("height", svgHeight);
+        let g = svg.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        let x = d3.scaleTime()
+            .rangeRound([0, width]);
+        let y = d3.scaleLinear()
+            .rangeRound([height, 0]);
+        let line = d3.line()
+            .x((d) => { return x(d.date) })
+            .y((d) => { return y(d.precip) });
+        x.domain(d3.extent(data, (d) => { return d.date }));
+        y.domain(d3.extent(data, (d) => { return d.precip }));
+        g.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x))
+            .select(".domain")
+            .remove();
+        g.append("g")
+            .call(d3.axisLeft(y))
+            .append("text")
+            .attr("fill", "#000")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", "0.71em")
+            .attr("text-anchor", "end")
+            .text("Precipitation");
+        g.append("path")
+            .datum(data)
+            .attr("fill", "none")
+            .attr("stroke", "#0053A7")
+            .attr("stroke-linejoin", "round")
+            .attr("stroke-linecap", "round")
+            .attr("stroke-width", 3)
+            .attr("d", line);
     };
 
     /* OnLoad Events */
