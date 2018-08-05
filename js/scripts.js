@@ -9,7 +9,7 @@ $(document).ready(function() {
 
     /* Variables */
     var $locForm = $("#locationForm");
-    var $chart = $("#weatherChart");
+    //var $chart = $("#weatherChart");
     var $err = $("#errors");
     var $cityName = $(".city");
     var zipcode;
@@ -18,7 +18,7 @@ $(document).ready(function() {
     var svgWidth = $(".container").width(),
         svgHeight = 150;
 
-    var margin = { top: 10, right: 20, bottom: 30, left: 50 };
+    var margin = { top: 10, right: 20, bottom: 15, left: 50 };
     var width = svgWidth - margin.left - margin.right;
     var height = svgHeight - margin.top - margin.bottom;
 
@@ -26,8 +26,8 @@ $(document).ready(function() {
     const apiKEY = "eb02d0472566fca615fc7006e81869d3";
     const apiURL = "http://api.openweathermap.org/data/2.5/forecast?id=524901&units=" + units + "&APPID=" + apiKEY;
     //const iconURL = "http://openweathermap.org/img/w/";
-    //const windDirection = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "N"];
-    //const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const windDirection = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "N"];
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     /* jQuery Events */
 
@@ -134,7 +134,6 @@ $(document).ready(function() {
         let humidity_Data = [];
         let cloud_Data = [];
         let precipitation_Data = [];
-        //let content = "<ul>";
         data.forEach((forecast) => {
             let precipitation = 0;
             if (forecast.rain && forecast.rain['3h']) {
@@ -143,45 +142,35 @@ $(document).ready(function() {
             if (forecast.snow && forecast.snow['3h']) {
                 precipitation += +forecast.snow['3h'];
             };
-            //let winddir = Math.floor((forecast.wind.deg + 11.25) / 22.5);
-            /*let date = new Date(forecast.dt * 1000);
-            let hour = date.getHours() % 12;
-            if (hour === 0) hour = 12;
-            let dateTimeString = date.getDate() + " " + months[date.getMonth()] + " " + date.getFullYear() + ", " + hour + ":00 " + ((date.getHours() < 12) ? " AM" : " PM");*/
-            /*content += "<li><b>Date/Time: " + dateTimeString + "</b><ul>";
-            content += "<li>Weather: " + forecast.weather[0].main + " (" + forecast.weather[0].description + ")</li>";
-            content += "<li>Temperature: " + forecast.main.temp + " degrees</li>";
-            content += "<li>Humidity: " + forecast.main.humidity + "</li>";
-            content += "<li>Cloud cover: " + forecast.clouds.all + "%</li>";
-            content += "<li>Wind: " + Math.round(forecast.wind.speed * 100) / 100 + " MPH from " + Math.round(forecast.wind.deg * 100) / 100 + " degrees [" + windDirection[winddir] + "]</li>";
-            content += "<li>Precipitation : " + Math.round(precipitation * 100) / 100 + " inches over last three hours</li>";
-            content += "</ul></li>";*/
+            populateTextData(forecast);
+            let date = new Date(forecast.dt * 1000);
             temp_Data.push({
-                date: new Date(forecast.dt * 1000),
+                date: date,
                 temp: +forecast.main.temp
             });
             humidity_Data.push({
-                date: new Date(forecast.dt * 1000),
+                date: date,
                 humidity: +forecast.main.humidity
             });
             cloud_Data.push({
-                date: new Date(forecast.dt * 1000),
-                clouds: +forecast.clouds.all
+                date: date,
+                cloud: +forecast.clouds.all
             });
             precipitation_Data.push({
-                date: new Date(forecast.dt * 1000),
-                precip: +precipitation
+                date: date,
+                precipitation: +precipitation
             });
         });
-        drawTemperatureChart(temp_Data);
-        drawHumidityChart(humidity_Data);
-        drawCloudCoverChart(cloud_Data);
-        drawPrecipitationChart(precipitation_Data);
+        drawChart(temp_Data, "temp", "#006A5C", "Temperature");
+        drawChart(humidity_Data, "humidity", "#7C0044", "% Humidity");
+        drawChart(cloud_Data, "cloud", "#F3AA85", "% Cloud Cover");
+        drawChart(precipitation_Data, "precipitation", "#0053A7", "Precipitation (inches)");
+        drawDayAxis(temp_Data);
         $cityName.html("for <span>" + d.city.name + ", USA</span>");
     };
 
-    function drawTemperatureChart(data) {
-        let svg = d3.select('svg.temp')
+    function drawChart(data, type, lineColor, text) {
+        let svg = d3.select('svg.' + type)
             .attr("width", svgWidth)
             .attr("height", svgHeight);
         let g = svg.append("g")
@@ -192,12 +181,16 @@ $(document).ready(function() {
             .rangeRound([height, 0]);
         let line = d3.line()
             .x((d) => { return x(d.date) })
-            .y((d) => { return y(d.temp) });
+            .y((d) => { return y(d[type]) });
         x.domain(d3.extent(data, (d) => { return d.date }));
-        y.domain(d3.extent(data, (d) => { return d.temp }));
+        y.domain(d3.extent(data, (d) => { return d[type] }));
         g.append("g")
             .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(x))
+            .call(d3.axisBottom(x)
+                .ticks(Math.floor(data.length / 2))
+                .tickSize(-height, 0, 0)
+                .tickFormat(d3.timeFormat('%I'))
+            )
             .select(".domain")
             .remove();
         g.append("g")
@@ -208,133 +201,58 @@ $(document).ready(function() {
             .attr("y", 6)
             .attr("dy", "0.71em")
             .attr("text-anchor", "end")
-            .text("Temperature");
+            .text(text);
         g.append("path")
             .datum(data)
             .attr("fill", "none")
-            .attr("stroke", "#006A5C")
+            .attr("stroke", lineColor)
             .attr("stroke-linejoin", "round")
             .attr("stroke-linecap", "round")
             .attr("stroke-width", 3)
             .attr("d", line);
     };
 
-    function drawHumidityChart(data) {
-        let svg = d3.select('svg.humidity')
+    function drawDayAxis(data) {
+        let svg = d3.select('svg.days')
             .attr("width", svgWidth)
-            .attr("height", svgHeight);
+            .attr("height", 30);
         let g = svg.append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
         let x = d3.scaleTime()
-            .rangeRound([0, width]);
-        let y = d3.scaleLinear()
-            .rangeRound([height, 0]);
-        let line = d3.line()
-            .x((d) => { return x(d.date) })
-            .y((d) => { return y(d.humidity) });
+            .range([0, width]);
         x.domain(d3.extent(data, (d) => { return d.date }));
-        y.domain(d3.extent(data, (d) => { return d.humidity }));
+        //y.domain(d3.extent(data, (d) => { return d[type] }));
         g.append("g")
-            .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(x))
+            .attr("transform", "translate(0, 0)")
+            .call(d3.axisBottom(x)
+                .ticks(5)
+                .tickSize(-30, 0, 0)
+                .tickFormat(d3.timeFormat('%a %d %b'))
+            )
             .select(".domain")
             .remove();
-        g.append("g")
-            .call(d3.axisLeft(y))
-            .append("text")
-            .attr("fill", "#000")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 6)
-            .attr("dy", "0.71em")
-            .attr("text-anchor", "end")
-            .text("% Humidity");
-        g.append("path")
-            .datum(data)
-            .attr("fill", "none")
-            .attr("stroke", "#7C0044")
-            .attr("stroke-linejoin", "round")
-            .attr("stroke-linecap", "round")
-            .attr("stroke-width", 3)
-            .attr("d", line);
     };
 
-    function drawCloudCoverChart(data) {
-        let svg = d3.select('svg.cloud')
-            .attr("width", svgWidth)
-            .attr("height", svgHeight);
-        let g = svg.append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-        let x = d3.scaleTime()
-            .rangeRound([0, width]);
-        let y = d3.scaleLinear()
-            .rangeRound([height, 0]);
-        let line = d3.line()
-            .x((d) => { return x(d.date) })
-            .y((d) => { return y(d.clouds) });
-        x.domain(d3.extent(data, (d) => { return d.date }));
-        y.domain(d3.extent(data, (d) => { return d.clouds }));
-        g.append("g")
-            .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(x))
-            .select(".domain")
-            .remove();
-        g.append("g")
-            .call(d3.axisLeft(y))
-            .append("text")
-            .attr("fill", "#000")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 6)
-            .attr("dy", "0.71em")
-            .attr("text-anchor", "end")
-            .text("% Cloud Cover");
-        g.append("path")
-            .datum(data)
-            .attr("fill", "none")
-            .attr("stroke", "#F3AA85")
-            .attr("stroke-linejoin", "round")
-            .attr("stroke-linecap", "round")
-            .attr("stroke-width", 3)
-            .attr("d", line);
-    };
-
-    function drawPrecipitationChart(data) {
-        let svg = d3.select('svg.precipitation')
-            .attr("width", svgWidth)
-            .attr("height", svgHeight);
-        let g = svg.append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-        let x = d3.scaleTime()
-            .rangeRound([0, width]);
-        let y = d3.scaleLinear()
-            .rangeRound([height, 0]);
-        let line = d3.line()
-            .x((d) => { return x(d.date) })
-            .y((d) => { return y(d.precip) });
-        x.domain(d3.extent(data, (d) => { return d.date }));
-        y.domain(d3.extent(data, (d) => { return d.precip }));
-        g.append("g")
-            .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(x))
-            .select(".domain")
-            .remove();
-        g.append("g")
-            .call(d3.axisLeft(y))
-            .append("text")
-            .attr("fill", "#000")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 6)
-            .attr("dy", "0.71em")
-            .attr("text-anchor", "end")
-            .text("Precipitation (inches)");
-        g.append("path")
-            .datum(data)
-            .attr("fill", "none")
-            .attr("stroke", "#0053A7")
-            .attr("stroke-linejoin", "round")
-            .attr("stroke-linecap", "round")
-            .attr("stroke-width", 3)
-            .attr("d", line);
-    };
+    function populateTextData(forecast) {
+        //TODO: Apply some of these to text blocks
+        let winddir = Math.floor((forecast.wind.deg + 11.25) / 22.5);
+        let date = new Date(forecast.dt * 1000);
+        let hour = date.getHours() % 12;
+        if (hour === 0) hour = 12;
+        let dateTimeString = date.getDate() + " " + months[date.getMonth()] + " " + date.getFullYear() + ", " + hour + ":00 " + ((date.getHours() < 12) ? "AM" : "PM");
+        /*content += "<li><b>Date/Time: " + dateTimeString + "</b><ul>";
+        content += "<li>Weather: " + forecast.weather[0].main + " (" + forecast.weather[0].description + ")</li>";
+        content += "<li>Temperature: " + forecast.main.temp + " degrees</li>";
+        content += "<li>Humidity: " + forecast.main.humidity + "</li>";
+        content += "<li>Cloud cover: " + forecast.clouds.all + "%</li>";
+        content += "<li>Wind: " + Math.round(forecast.wind.speed * 100) / 100 + " MPH from " + Math.round(forecast.wind.deg * 100) / 100 + " degrees [" + windDirection[winddir] + "]</li>";
+        content += "<li>Precipitation : " + Math.round(precipitation * 100) / 100 + " inches over last three hours</li>";
+        content += "</ul></li>";*/
+        console.log("Date/Time: " + dateTimeString);
+        console.log(" - Weather: " + forecast.weather[0].main + " (" + forecast.weather[0].description + ")");
+        console.log(" - Temperature: " + forecast.main.temp + " degrees");
+        console.log(" - Wind: " + Math.round(forecast.wind.speed * 100) / 100 + " MPH from " + Math.round(forecast.wind.deg * 100) / 100 + " degrees [" + windDirection[winddir] + "]");
+    }
 
     /* OnLoad Events */
 
