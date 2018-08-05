@@ -25,9 +25,9 @@ $(document).ready(function() {
     /* Constants */
     const apiKEY = "eb02d0472566fca615fc7006e81869d3";
     const apiURL = "http://api.openweathermap.org/data/2.5/forecast?id=524901&units=" + units + "&APPID=" + apiKEY;
-    const iconURL = "http://openweathermap.org/img/w/";
-    const windDirection = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "N"];
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    //const iconURL = "http://openweathermap.org/img/w/";
+    //const windDirection = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "N"];
+    //const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     /* jQuery Events */
 
@@ -37,7 +37,6 @@ $(document).ready(function() {
         city = null;
         city = $locForm.find('input[name="city"]').val();
         zipcode = $locForm.find('input[name="zipcode"]').val();
-        console.log("zipcode", zipcode, "city", city);
         if (zipcode) {
             window.location.href = window.location.href.split('?')[0] + "?zipcode=" + zipcode;
         } else if (city) {
@@ -72,19 +71,18 @@ $(document).ready(function() {
 
     // is data for city already contained in sessionStorage?
     function dataStoredLocally(zip, city) {
-        console.log("dataStoredLocally", zip, city);
         if (!zip && !city) return;
         let data = null;
         let storedCity = city;
         if (zip) {
             storedCity = localStorage.getItem(zip);
         }
-        console.log("storedCity?", storedCity);
         if (storedCity) {
+            console.log("Data found in session storage.");
             data = JSON.parse(sessionStorage.getItem(storedCity));
         }
-        console.log("data?", data);
         if (!data) {
+            console.log("No data stored locally.");
             loadWeatherJSON(zip, city);
         } else {
             parseData(data);
@@ -93,7 +91,6 @@ $(document).ready(function() {
 
     // load data from OpenWeatherMap
     function loadWeatherJSON(zip, city) {
-        console.log("loadWeatherJSON", zip, city);
         let query = "&";
         let valid = true;
         let data = null;
@@ -108,14 +105,13 @@ $(document).ready(function() {
         if (valid) {
             console.log(apiURL + query);
             $.getJSON(apiURL + query, (response) => {
-                    console.log("success", response);
+                    console.log("API access: success");
                     data = response;
                     if (zip) { // if zip code was entered, map it to city name in localStorage
                         localStorage.setItem(zip, data.city.name);
                     }
                     // write response data to sessionStorage under city name key
                     sessionStorage.setItem(data.city.name, JSON.stringify(data));
-                    console.log(response.list.length);
                     parseData(data);
                 })
                 .fail((error) => {
@@ -130,7 +126,7 @@ $(document).ready(function() {
         }
     }
 
-    // display data in DOM
+    // parse data
     function parseData(d) {
         if (!d) return;
         let data = d.list;
@@ -139,13 +135,13 @@ $(document).ready(function() {
         let cloud_Data = [];
         let precipitation_Data = [];
         //let content = "<ul>";
-        data.forEach((forecast, idx) => {
+        data.forEach((forecast) => {
             let precipitation = 0;
-            if (forecast.rain['3h']) {
-                precipitation += forecast.rain['3h'];
+            if (forecast.rain && forecast.rain['3h']) {
+                precipitation += +forecast.rain['3h'];
             }
-            if (forecast.snow) {
-                precipitation += forecast.rain['3h'];
+            if (forecast.snow && forecast.snow['3h']) {
+                precipitation += +forecast.snow['3h'];
             };
             //let winddir = Math.floor((forecast.wind.deg + 11.25) / 22.5);
             /*let date = new Date(forecast.dt * 1000);
@@ -174,13 +170,14 @@ $(document).ready(function() {
             });
             precipitation_Data.push({
                 date: new Date(forecast.dt * 1000),
-                precip: precipitation
+                precip: +precipitation
             });
         });
         drawTemperatureChart(temp_Data);
         drawHumidityChart(humidity_Data);
         drawCloudCoverChart(cloud_Data);
         drawPrecipitationChart(precipitation_Data);
+        $cityName.html("for <span>" + d.city.name + ", USA</span>");
     };
 
     function drawTemperatureChart(data) {
@@ -190,7 +187,7 @@ $(document).ready(function() {
         let g = svg.append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
         let x = d3.scaleTime()
-            .rangeRound([0, width]);
+            .range([0, width]);
         let y = d3.scaleLinear()
             .rangeRound([height, 0]);
         let line = d3.line()
@@ -328,7 +325,7 @@ $(document).ready(function() {
             .attr("y", 6)
             .attr("dy", "0.71em")
             .attr("text-anchor", "end")
-            .text("Precipitation");
+            .text("Precipitation (inches)");
         g.append("path")
             .datum(data)
             .attr("fill", "none")
