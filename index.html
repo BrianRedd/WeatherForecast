@@ -1,0 +1,70 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags always come first -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+
+    <!-- Bootstrap CSS -->
+    <!-- build:css css.main.css -->
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- endbuild-->
+
+    <title>5 Day Weather Forecast</title>
+    <!-- Git Repo: https://github.com/BrianRedd/WeatherForecast.git-->
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-md navbar-light bg-light">
+        <div class="container">
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#locationFormContainer">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div id="locationFormContainer" class="collapse navbar-collapse">
+                <form class="form-inline col-md-12" id="locationForm" name="locationForm">
+                    <ul class="navbar-nav">
+                        <li class="nav-item col-md-4">
+                            <div class="form-group row">
+                                <label class="col-6 col-form-label" for="zipcode">Zip Code:</label>
+                                <div class="col-6">
+                                    <input class="form-control" type="text" maxlength="5" id="zipcode" name="zipcode" placeholder="Zip Code" />
+                                </div>
+                            </div>
+                        </li>
+                        <li class="nav-item col-md-4">
+                            <div class="form-group row">
+                                <label class="col-4 col-form-label" for="city">City:</label>
+                                <div class="col-8">
+                                    <input class="form-control" type="text" id="city" name="city" placeholder="U.S. City" />
+                                </div>
+                            </div>
+                        </li>
+                        <li class="nav-item col-md-4">
+                            <button id="clearLocationForm" type="button" class="btn">Clear</button>
+                            <button id="locationFormSubmit" type="button" class="btn btn-primary">Get Forecast</button>
+                        </li>
+                    </ul>
+                </form>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <h2>Your 5 Day Weather Forecast <span class="city"></span></h2>
+        <div id="errors"></div>
+        <div id="weatherChart"></div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <!-- build:js js/main.js -->
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/tether/dist/js/tether.min.js"></script>
+    <script src="node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="node_modules/d3/dist/d3.min.js"></script>
+    <script src="js/scripts.js"></script>
+    <!-- endbuild -->
+</body>
+
+</html>
