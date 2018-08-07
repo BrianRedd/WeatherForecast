@@ -18,6 +18,10 @@ body {
     height: 100%;
 }
 
+.hidden {
+    display: none;
+}
+
 #zipcode {
     width: 100px;
 }
@@ -26,19 +30,35 @@ body {
     width: 150px;
 }
 
-
-/*#weatherChart {
-    border: 1px solid black;
-    height: 500px;
-    overflow: auto;
-}*/
+.city span {
+    font-style: italic;
+}
 
 #errors {
     color: #FF0000;
 }
 
-.city span {
-    font-style: italic;
+h5 {
+    cursor: pointer;
+}
+
+.weather_icons,
+.wind_direction {
+    padding-left: 50px;
+    white-space: nowrap;
+}
+
+.wind_direction div {
+    display: inline-block;
+    vertical-align: top;
+}
+
+.wind_direction div span {
+    font-size: 0.7em;
+}
+
+.wind_direction div:nth-child(even) span {
+    display: none;
 }
 
 .tick line {
@@ -47,4 +67,16 @@ body {
 
 svg.days .tick line {
     stroke: #000000;
+}
+
+.dataText {
+    font-size: 0.9em;
+    font-weight: bold;
+    text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.3), 1px -1px 0 rgba(255, 255, 255, 0.3), -1px 1px 0 rgba(255, 255, 255, 0.3), -1px -1px 0 rgba(255, 255, 255, 0.3), 1px 0px 0 rgba(255, 255, 255, 0.3), 0px 1px 0 rgba(255, 255, 255, 0.3), -1px 0px 0 rgba(255, 255, 255, 0.3), 0px -1px 0 rgba(255, 255, 255, 0.3);
+}
+
+@media screen and (min-width: 768px) {
+    .wind_direction div:nth-child(even) span {
+        display: inline-block;
+    }
 }
